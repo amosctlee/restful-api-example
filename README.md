@@ -6,7 +6,7 @@
 docker compose build
 ```
 
-## 啟動
+## 啟動 API
 
 1. 啟動服務
 
@@ -18,6 +18,12 @@ docker compose build
 
     browser: http://localhost:8088/docs
 
+
+## 執行爬蟲
+
+```
+docker compose exec iphone14-api python crawler.py
+```
 
 ## 測試
 
