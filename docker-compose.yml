@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  iphone14-api:
+    image: docker.io/iphone14-api:latest
+    container_name: iphone14-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /working/app
+    volumes:
+      - ./src:/working
+    ports:
+      - "8088:80"
+    tty: true
+    command:
+      [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "80",
+        "--reload"
+      ]
