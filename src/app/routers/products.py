@@ -45,10 +45,10 @@ async def create_product(product: ProductIn, db: Session = Depends(get_db)):
         return new_product
     except ProductExistsException:
         raise HTTPException(
-            status_code=400, detail="Product id already exists")
+            status_code=400, detail=f"Product id({product.id}) already exists")
 
 
-@router.put("/{product_id}", response_model=ProductOut)
+@router.patch("/{product_id}", response_model=ProductOut)
 async def update_product(product_id: str, product: ProductUpdate, db: Session = Depends(get_db)):
     try:
         updated_product = ProductDBDao.update(db, product_id, product)

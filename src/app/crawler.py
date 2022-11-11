@@ -1,13 +1,16 @@
+import re
 from typing import Union
 import json
 from zoneinfo import ZoneInfo
 from datetime import datetime
 import requests
 
+from schemas.products import ProductSchema
+
 
 def get_iphone14_page_n(page_num: int) -> dict:
 
-    dt = datetime.now(tz=ZoneInfo("Asia/Taipei"))
+    dt = datetime.now(tz=ZoneInfo('Asia/Taipei'))
     timestamp = int(dt.timestamp() * 1000)
 
     headers = {
@@ -101,29 +104,61 @@ def load_json(filename: str) -> Union[list, dict]:
     return data
 
 
-def main():
+def crawl_to_json(today: str):
     iphone_items = []
 
     p1_data = get_iphone14_page_n(1)
     iphone_items.extend(p1_data['goods_info_list'])
     cur_page = p1_data['cur_page']
     max_page = p1_data['max_page']
+
+    print(f'max_page: {max_page}')
+    print(f'page {cur_page} crawled')
     while cur_page < max_page:
         cur_page += 1
         pn_data = get_iphone14_page_n(cur_page)
         iphone_items.extend(pn_data['goods_info_list'])
-        print(cur_page, pn_data['cur_page'])
+        print(f'page {cur_page} crawled')
 
-    write_json(iphone_items, 'iphones.json')
-
-    iphone_items = load_json('iphones.json')
-
-    goods_code_set = set(
-        good['goodsCode'] for good in iphone_items
-    )
-
-    print()
+    write_json(iphone_items, f'{today}_iphones.json')
 
 
-if __name__ == "__main__":
+def clean_price(price: str) -> int:
+    price = price.replace(',', '')
+    price = price.replace('$', '')
+    match = re.search(r'\d+', price)
+    if match:
+        return int(match.group())
+
+
+def store_json_to_db(today: str):
+    iphone_items = load_json(f'{today}_iphones.json')
+
+    for item in iphone_items:
+        product = {
+            'id': item['goodsCode'],
+            'name': item['goodsName'],
+            'price': clean_price(item['goodsPrice']),
+        }
+        product = ProductSchema(**product)
+
+        response = requests.post(
+            'http://localhost:80/products', json=product.dict())
+        if response.status_code == 400:
+            response = requests.patch(
+                f'http://localhost:80/products/{product.id}', json=product.dict())
+            assert response.status_code == 200, response.json()
+
+        else:
+            print('create a product:', response.json()['id'])
+
+
+def main():
+    today = datetime.now(tz=ZoneInfo('Asia/Taipei')).strftime('%Y%m%d')
+
+    crawl_to_json(today)
+    store_json_to_db(today)
+
+
+if __name__ == '__main__':
     main()

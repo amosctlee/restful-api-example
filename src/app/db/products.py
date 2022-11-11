@@ -14,6 +14,10 @@ class Product(Base):
     name = sa.Column(sa.String)
     price = sa.Column(sa.Integer)
 
+    created_at = sa.Column(sa.DateTime, server_default=sa.func.now())
+    updated_at = sa.Column(
+        sa.DateTime, server_default=sa.func.now(), onupdate=sa.func.now())
+
 
 class ProductNotFoundException(Exception):
     pass
@@ -30,11 +34,15 @@ class ProductDBDao:
             Product.id == product_id).first()
         if db_product is None:
             raise ProductNotFoundException()
-        return db_product
+        return ProductSchema.from_orm(db_product)
 
     @classmethod
     def list(cls, db: Session, limit: int, offset: int) -> List[ProductSchema]:
-        return db.query(Product).limit(limit).offset(offset).all()
+        db_orm_products = db.query(Product).limit(limit).offset(offset).all()
+        db_products = []
+        for db_product in db_orm_products:
+            db_products.append(ProductSchema.from_orm(db_product))
+        return db_products
 
     @classmethod
     def insert(cls, db: Session, product: ProductSchema) -> None:
@@ -47,10 +55,10 @@ class ProductDBDao:
         db.add(db_product)
         db.commit()
         db.refresh(db_product)
-        return db_product
+        return ProductSchema.from_orm(db_product)
 
     @classmethod
-    def update(cls, db: Session, product_id: str, product: ProductSchema) -> None:
+    def update(cls, db: Session, product_id: str, product: ProductSchema) -> ProductSchema:
         db_product = db.query(Product).filter(
             Product.id == product_id).first()
         if db_product is None:
@@ -63,7 +71,7 @@ class ProductDBDao:
         db.commit()
         db.refresh(db_product)
 
-        return db_product
+        return ProductSchema.from_orm(db_product)
 
     @classmethod
     def delete(cls, db: Session, product_id: str) -> None:

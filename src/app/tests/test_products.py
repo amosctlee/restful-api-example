@@ -52,11 +52,11 @@ def test_update_product():
     }
     response = client.post("/products/", json=new_product)
 
-    response = client.put("/products/10525022", json={"price": 100})
+    response = client.patch("/products/10525022", json={"price": 100})
     assert response.status_code == 200
     assert response.json()["price"] == 100
 
-    response = client.put("/products/10525022", json={"name": "new name"})
+    response = client.patch("/products/10525022", json={"name": "new name"})
     assert response.status_code == 200
     assert response.json()["name"] == "new name"
 
@@ -70,7 +70,7 @@ def test_rud_not_exist_product():
     assert response.status_code == 404
     assert response.json() == {"detail": "Product not found"}
 
-    response = client.put(f"/products/{not_exist_id}", json={"price": 100})
+    response = client.patch(f"/products/{not_exist_id}", json={"price": 100})
     assert response.status_code == 404
     assert response.json() == {"detail": "Product not found"}
 
@@ -95,7 +95,7 @@ def test_c_when_product_id_exists():
     }
     response = client.post("/products/", json=another_product)
     assert response.status_code == 400
-    assert response.json() == {"detail": "Product id already exists"}
+    assert response.json() == {"detail": "Product id(10525022) already exists"}
 
     # clean up
     client.delete("/products/10525022")
